@@ -1,0 +1,1 @@
+/usr/bin/c++ -fPIC -fPIC -pthread -Wall -Wextra -march=native -mavx512bw -O3 -g -shared -Wl,-soname,libpactree.so -o libpactree.so CMakeFiles/pactree.dir/Oplog.cpp.o CMakeFiles/pactree.dir/WorkerThread.cpp.o CMakeFiles/pactree.dir/linkedList.cpp.o CMakeFiles/pactree.dir/listNode.cpp.o CMakeFiles/pactree.dir/main.cpp.o CMakeFiles/pactree.dir/pactree.cpp.o 

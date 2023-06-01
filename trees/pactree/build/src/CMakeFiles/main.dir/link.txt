@@ -1,0 +1,1 @@
+/usr/bin/c++ -fPIC -pthread -Wall -Wextra -march=native -mavx512bw -O3 -g CMakeFiles/main.dir/main.cpp.o -o main  -Wl,-rpath,/home/cwk/cwk/ZZBTree/trees/pactree/build/src libpactree.so -lnuma -ljemalloc ../lib/PDL-ART/libpdlart.a -lpmemobj -lpmem 

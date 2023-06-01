@@ -1,0 +1,2 @@
+/usr/bin/ar qc libpdlart.a CMakeFiles/pdlart.dir/Epoche.cpp.o CMakeFiles/pdlart.dir/N.cpp.o CMakeFiles/pdlart.dir/N16.cpp.o CMakeFiles/pdlart.dir/N256.cpp.o CMakeFiles/pdlart.dir/N4.cpp.o CMakeFiles/pdlart.dir/N48.cpp.o CMakeFiles/pdlart.dir/Tree.cpp.o
+/usr/bin/ranlib libpdlart.a
