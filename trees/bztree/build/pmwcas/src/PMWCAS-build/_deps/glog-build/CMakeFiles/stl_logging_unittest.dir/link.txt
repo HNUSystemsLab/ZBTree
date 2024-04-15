@@ -1,0 +1,1 @@
+/usr/bin/c++  -Wno-long-long -pedantic -fPIC -march=native -O3 -DNDEBUG -rdynamic CMakeFiles/stl_logging_unittest.dir/src/stl_logging_unittest.cc.o -o stl_logging_unittest  libglog.a -lunwind 

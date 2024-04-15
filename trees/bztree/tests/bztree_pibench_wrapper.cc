@@ -1,0 +1,161 @@
+#include "bztree_pibench_wrapper.h"
+
+#define TEST_LAYOUT_NAME "bztree_layout"
+
+static constexpr uint32_t kDescriptorsPerThread = 1024;
+
+extern "C" tree_api *create_tree(const tree_options_t &opt) {
+  return new bztree_wrapper(opt);
+}
+
+static bool FileExists(const char *pool_path) {
+  struct stat buffer;
+  return (stat(pool_path, &buffer) == 0);
+}
+
+bztree::BzTree *create_new_tree(const tree_options_t &opt) {
+  bztree::BzTree::ParameterSet param(1024, 512, 1024);
+  uint32_t num_threads = opt.num_threads + 1; // account for the loading thread
+  uint32_t desc_pool_size = kDescriptorsPerThread * num_threads;
+
+#ifdef PMDK
+  pmwcas::InitLibrary(
+      pmwcas::PMDKAllocator::Create(opt.pool_path.c_str(), TEST_LAYOUT_NAME,
+                                    opt.pool_size),
+      pmwcas::PMDKAllocator::Destroy, pmwcas::LinuxEnvironment::Create,
+      pmwcas::LinuxEnvironment::Destroy);
+  auto pmdk_allocator =
+      reinterpret_cast<pmwcas::PMDKAllocator *>(pmwcas::Allocator::Get());
+  bztree::Allocator::Init(pmdk_allocator);
+
+  auto *bztree = reinterpret_cast<bztree::BzTree *>(
+      pmdk_allocator->GetRoot(sizeof(bztree::BzTree)));
+  pmdk_allocator->Allocate((void **)&bztree->pmwcas_pool,
+                           sizeof(pmwcas::DescriptorPool));
+  new (bztree->pmwcas_pool)
+      pmwcas::DescriptorPool(desc_pool_size, num_threads, false);
+
+  new (bztree)
+      bztree::BzTree(param, bztree->pmwcas_pool,
+                     reinterpret_cast<uint64_t>(pmdk_allocator->GetPool()));
+#else
+  // Volatile variant
+  // pmwcas::InitLibrary(pmwcas::DefaultAllocator::Create,
+  //                    pmwcas::DefaultAllocator::Destroy,
+  pmwcas::InitLibrary(
+      pmwcas::TlsAllocator::Create, pmwcas::TlsAllocator::Destroy,
+      pmwcas::LinuxEnvironment::Create, pmwcas::LinuxEnvironment::Destroy);
+  auto pool = new pmwcas::DescriptorPool(desc_pool_size, num_threads, false);
+  auto *bztree = bztree::BzTree::New(param, pool);
+#endif
+
+  return bztree;
+}
+
+bztree::BzTree *recovery_from_pool(const tree_options_t &opt) {
+  uint32_t num_threads = opt.num_threads + 1; // account for the loading thread
+  uint32_t desc_pool_size = kDescriptorsPerThread * num_threads;
+
+  pmwcas::InitLibrary(
+      pmwcas::PMDKAllocator::Create(opt.pool_path.c_str(), TEST_LAYOUT_NAME,
+                                    opt.pool_size),
+      pmwcas::PMDKAllocator::Destroy, pmwcas::LinuxEnvironment::Create,
+      pmwcas::LinuxEnvironment::Destroy);
+  auto pmdk_allocator =
+      reinterpret_cast<pmwcas::PMDKAllocator *>(pmwcas::Allocator::Get());
+  bztree::Allocator::Init(pmdk_allocator);
+
+  auto tree = reinterpret_cast<bztree::BzTree *>(
+      pmdk_allocator->GetRoot(sizeof(bztree::BzTree)));
+  tree->Recovery(num_threads);
+
+  pmdk_allocator->Allocate((void **)&tree->pmwcas_pool,
+                           sizeof(pmwcas::DescriptorPool));
+  new (tree->pmwcas_pool)
+      pmwcas::DescriptorPool(desc_pool_size, num_threads, false);
+
+  tree->SetPMWCASPool(tree->pmwcas_pool);
+
+  return tree;
+}
+
+bztree_wrapper::bztree_wrapper(const tree_options_t &opt) {
+  if (FileExists(opt.pool_path.c_str())) {
+    std::cout << "recovery from existing pool." << std::endl;
+    tree_ = recovery_from_pool(opt);
+  } else {
+    std::cout << "creating new tree on pool." << std::endl;
+    tree_ = create_new_tree(opt);
+  }
+}
+
+bztree_wrapper::~bztree_wrapper() {
+  pmwcas::Thread::ClearRegistry();
+#ifdef PMEM
+  tree_->~BzTree();
+  auto pmdk_allocator =
+      reinterpret_cast<pmwcas::PMDKAllocator *>(pmwcas::Allocator::Get());
+  auto *pool = tree_->GetPMWCASPool();
+  pool->~DescriptorPool();
+#endif
+}
+
+bool bztree_wrapper::find(const char *key, size_t key_sz, char *value_out) {
+  // FIXME(tzwang): for now only support 8-byte values
+  uint64_t k = __builtin_bswap64(*reinterpret_cast<const uint64_t *>(key));
+  return tree_
+      ->Read(reinterpret_cast<const char *>(&k), key_sz, (uint64_t *)value_out)
+      .IsOk();
+}
+
+bool bztree_wrapper::insert(const char *key, size_t key_sz, const char *value,
+                            size_t value_sz) {
+  // FIXME(tzwang): for now only support 8-byte values
+  assert(value_sz == sizeof(uint64_t));
+  uint64_t v = reinterpret_cast<uint64_t>(const_cast<char *>(value));
+  auto rv = tree_->Insert(reinterpret_cast<const char *>(key), key_sz, v);
+
+  LOG_IF(INFO, !rv.IsOk()) << "insert failed!" << std::endl;
+  return rv.IsOk();
+}
+
+bool bztree_wrapper::update(const char *key, size_t key_sz, const char *value,
+                            size_t value_sz) {
+  // FIXME(tzwang): for now only support 8-byte values
+  assert(value_sz == sizeof(uint64_t));
+  uint64_t v = reinterpret_cast<uint64_t>(const_cast<char *>(value));
+
+  return tree_->Update(reinterpret_cast<const char *>(key), key_sz, v).IsOk();
+}
+
+bool bztree_wrapper::remove(const char *key, size_t key_sz) {
+  uint64_t k = __builtin_bswap64(*reinterpret_cast<const uint64_t *>(key));
+  return tree_->Delete(reinterpret_cast<const char *>(&k), key_sz).IsOk();
+}
+
+int bztree_wrapper::scan(const char *key, size_t key_sz, int scan_sz,
+                         char *&values_out) {
+  static thread_local std::array<char, (1 << 20)> results;
+  uint64_t k = __builtin_bswap64(*reinterpret_cast<const uint64_t *>(key));
+
+  int scanned = 0;
+  char *dst = results.data();
+
+  auto iter = tree_->RangeScanBySize(reinterpret_cast<const char *>(&k), key_sz,
+                                     scan_sz);
+  for (scanned = 0; (scanned < scan_sz); ++scanned) {
+    auto record = iter->GetNext();
+    if (record == nullptr) break;
+
+    uint64_t result_key = __builtin_bswap64(
+        *reinterpret_cast<const uint64_t *>(record->GetKey()));
+    memcpy(dst, &result_key, sizeof(uint64_t));
+    dst += sizeof(uint64_t);
+
+    auto payload = record->GetPayload();
+    memcpy(dst, &payload, sizeof(uint64_t));
+    dst += sizeof(uint64_t);
+  }
+  values_out = results.data();
+  return scanned;
+}

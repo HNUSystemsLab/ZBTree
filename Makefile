@@ -49,11 +49,17 @@ pactree_so:
 	cp trees/pactree/build/src/libpactree.so .
 	$(CXX) $(FLAGS) $(TBB_RPATH) -DUSE_PACTREE $(check_key) $(avx_512) main.cpp $(LIBS_DIR) $(TBB_LIB) $(TBB_DIR) $(INCLUDE_DIR) -I./trees/pactree/src -I./trees/pactree/include $(LIBS) -lpactree -o main
 
+bztree_so:
+	cp ./trees/bztree/build/libbztree.so .
+	cp ./trees/bztree/build/pmwcas/src/PMWCAS-build/libpmwcas.so .
+	$(CXX) $(FLAGS) $(BZTREE_RPATH) -DUSE_BZTREE $(check_key) $(avx_512) -fpermissive  -L. -I./trees/bztree \
+	-I./trees/bztree/build/pmwcas/src/PMWCAS -I./trees/bztree/build/pmwcas/src/PMWCAS/src -I./trees/bztree/build/pmwcas/src/PMWCAS/src/mwcas \
+	-I./trees/bztree/build/pmwcas/src/PMWCAS/src/common -I./trees/bztree/build/pmwcas/src/PMWCAS/src/environment -I./trees/bztree/build/pmwcas/src/PMWCAS/include -L./trees/bztree/build/pmwcas/src/PMWCAS-build \
+	-L./trees/bztree/build main.cpp -o main -lpmem -lpmemobj -lpmwcas -lbztree 
+
 single_wrapper_so:
 	$(CXX) $(FLAGS) $(TBB_RPATH)  $(check_key) $(avx_512) -shared $(VAR_SRCS) $(LIBS_DIR) $(TBB_LIB) $(INCLUDE_DIR) $(TBB_DIR) $(LIBS) -fPIC -o $(LIB_TARGET)
 exe_out:
 	$(CXX) $(FLAGS) $(TBB_RPATH) main.cpp $(check_key) $(avx_512) $(VAR_SRCS) $(LIBS_DIR) $(TBB_LIB) $(INCLUDE_DIR) $(TBB_DIR) $(LIBS) -lnyx_seele  -o main
-test_cpp:
-	$(CXX) $(FLAGS) test.cpp $(LIBS_DIR) $(INCLUDE_DIR) $(LIBS) -o testout
 clean:
 	rm -rf *.so main output libnyx_seele.so libnyx_pibench.so

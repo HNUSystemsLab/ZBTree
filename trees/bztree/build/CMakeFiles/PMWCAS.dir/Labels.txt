@@ -1,0 +1,12 @@
+# Target labels
+ PMWCAS
+# Source files and their labels
+/home/cwk/bztree/build/CMakeFiles/PMWCAS
+/home/cwk/bztree/build/CMakeFiles/PMWCAS.rule
+/home/cwk/bztree/build/CMakeFiles/PMWCAS-complete.rule
+/home/cwk/bztree/build/pmwcas/src/PMWCAS-stamp/PMWCAS-build.rule
+/home/cwk/bztree/build/pmwcas/src/PMWCAS-stamp/PMWCAS-configure.rule
+/home/cwk/bztree/build/pmwcas/src/PMWCAS-stamp/PMWCAS-download.rule
+/home/cwk/bztree/build/pmwcas/src/PMWCAS-stamp/PMWCAS-install.rule
+/home/cwk/bztree/build/pmwcas/src/PMWCAS-stamp/PMWCAS-mkdir.rule
+/home/cwk/bztree/build/pmwcas/src/PMWCAS-stamp/PMWCAS-patch.rule

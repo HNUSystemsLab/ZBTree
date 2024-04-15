@@ -1,0 +1,38 @@
+[35m[1mConsolidate compiler generated dependencies of target gtest[0m
+[35m[1mConsolidate compiler generated dependencies of target glog[0m
+[  3%] Built target gtest
+[ 17%] Built target glog
+[35m[1mConsolidate compiler generated dependencies of target gtest_main[0m
+[35m[1mConsolidate compiler generated dependencies of target gmock[0m
+[35m[1mConsolidate compiler generated dependencies of target stl_logging_unittest[0m
+[35m[1mConsolidate compiler generated dependencies of target logging_unittest[0m
+[35m[1mConsolidate compiler generated dependencies of target stacktrace_unittest[0m
+[35m[1mConsolidate compiler generated dependencies of target symbolize_unittest[0m
+[35m[1mConsolidate compiler generated dependencies of target demangle_unittest[0m
+[35m[1mConsolidate compiler generated dependencies of target pmwcas[0m
+[ 21%] Built target gmock
+[ 24%] Built target gtest_main
+[ 28%] Built target demangle_unittest
+[ 31%] Built target stl_logging_unittest
+[ 35%] Built target logging_unittest
+[ 38%] Built target stacktrace_unittest
+[ 42%] Built target symbolize_unittest
+[ 57%] Built target pmwcas
+[35m[1mConsolidate compiler generated dependencies of target utilities_unittest[0m
+[35m[1mConsolidate compiler generated dependencies of target signalhandler_unittest[0m
+[35m[1mConsolidate compiler generated dependencies of target gmock_main[0m
+[ 61%] Built target utilities_unittest
+[ 64%] Built target signalhandler_unittest
+[ 68%] Built target gmock_main
+[35m[1mConsolidate compiler generated dependencies of target epoch_test[0m
+[35m[1mConsolidate compiler generated dependencies of target garbage_list_test[0m
+[35m[1mConsolidate compiler generated dependencies of target mwcas_tests[0m
+[35m[1mConsolidate compiler generated dependencies of target recovery_tests[0m
+[35m[1mConsolidate compiler generated dependencies of target mem_safety_tests[0m
+[35m[1mConsolidate compiler generated dependencies of target callback_tests[0m
+[ 73%] Built target epoch_test
+[ 82%] Built target mem_safety_tests
+[ 84%] Built target garbage_list_test
+[ 89%] Built target recovery_tests
+[ 94%] Built target mwcas_tests
+[100%] Built target callback_tests

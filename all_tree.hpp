@@ -22,7 +22,8 @@
 #include <numa-config.h>
 #include "pactreeImpl.h"
 #include "common.h"
-
+#elif USE_BZTREE
+#include "bztree.h"
 #else
 #include "zbtree.h"
 
@@ -760,6 +761,163 @@ bool PACTree::remove(size_t key, size_t key_sz){
 int PACTree::scan(size_t key, size_t key_sz, int scan_sz){
     return 0;
 }
+#elif USE_BZTREE
+class BzTreee : public Tree_api{
+  public:
+    BzTreee();
+    virtual ~BzTreee();
+    virtual bool find(size_t key, size_t sz) override;
+    virtual bool insert(size_t key, size_t key_sz, const char* value, size_t value_sz) override;
+    virtual bool update(size_t key, size_t key_sz, const char* value, size_t value_sz) override;
+    virtual bool remove(size_t key, size_t key_sz) override;
+    virtual int scan(size_t key, size_t key_sz, int scan_sz) override;
+    bztree::BzTree* create_tree();
+    bztree::BzTree* my_tree;
+    bztree::BzTree* recovery_tree();
+    size_t pool_size = 1024*1021*1024*64UL;
+};
+
+
+bztree::BzTree* BzTreee::create_tree(){
+  bztree::BzTree::ParameterSet param(1024, 512, 1024);
+  uint32_t num_threads = run_thread + 1; // account for the loading thread
+  uint32_t desc_pool_size = 1024 * run_thread;
+
+  std::string pool_path("/mnt/pmem/bztree");
+  pmwcas::InitLibrary(
+      pmwcas::PMDKAllocator::Create(pool_path.c_str(), "bztree_layout",
+                                    pool_size),
+      pmwcas::PMDKAllocator::Destroy, pmwcas::LinuxEnvironment::Create,
+      pmwcas::LinuxEnvironment::Destroy);
+  auto pmdk_allocator =
+      reinterpret_cast<pmwcas::PMDKAllocator *>(pmwcas::Allocator::Get());
+  bztree::Allocator::Init(pmdk_allocator);
+
+  auto *bztree = reinterpret_cast<bztree::BzTree *>(
+      pmdk_allocator->GetRoot(sizeof(bztree::BzTree)));
+  pmdk_allocator->Allocate((void **)&bztree->pmwcas_pool,
+                           sizeof(pmwcas::DescriptorPool));
+  new (bztree->pmwcas_pool)
+      pmwcas::DescriptorPool(desc_pool_size, num_threads, false);
+
+  new (bztree)
+      bztree::BzTree(param, bztree->pmwcas_pool,
+                     reinterpret_cast<uint64_t>(pmdk_allocator->GetPool()));
+  return bztree;
+
+}
+
+
+bztree::BzTree* BzTreee::recovery_tree() {
+  uint32_t num_threads = run_thread + 1; // account for the loading thread
+  uint32_t desc_pool_size = 1024 * num_threads;
+  std::string pool_path("/mnt/pmem/bztree");
+  pmwcas::InitLibrary(
+      pmwcas::PMDKAllocator::Create(pool_path.c_str(), "bztree_layout",
+                                    pool_size),
+      pmwcas::PMDKAllocator::Destroy, pmwcas::LinuxEnvironment::Create,
+      pmwcas::LinuxEnvironment::Destroy);
+  auto pmdk_allocator =
+      reinterpret_cast<pmwcas::PMDKAllocator *>(pmwcas::Allocator::Get());
+  bztree::Allocator::Init(pmdk_allocator);
+
+  auto tree = reinterpret_cast<bztree::BzTree *>(
+      pmdk_allocator->GetRoot(sizeof(bztree::BzTree)));
+  tree->Recovery(num_threads);
+
+  pmdk_allocator->Allocate((void **)&tree->pmwcas_pool,
+                           sizeof(pmwcas::DescriptorPool));
+  new (tree->pmwcas_pool)
+      pmwcas::DescriptorPool(desc_pool_size, num_threads, false);
+
+  tree->SetPMWCASPool(tree->pmwcas_pool);
+
+  return tree;
+}
+
+static bool FileExists(const char *pool_path) {
+  struct stat buffer;
+  return (stat(pool_path, &buffer) == 0);
+}
+
+
+BzTreee::BzTreee(){
+  std::string pool_path("/mnt/pmem/bztree");
+   if (FileExists(pool_path.c_str())) {
+    std::cout << "file existed" << std::endl;
+    my_tree = recovery_tree();
+    } else {
+    std::cout << "creating new tree on pool." << std::endl;
+    my_tree = create_tree();
+  }
+}
+
+
+BzTreee::~BzTreee(){
+  // pmwcas::Thread::ClearRegistry();
+  my_tree->~BzTree();
+  auto pmdk_allocator =
+      reinterpret_cast<pmwcas::PMDKAllocator *>(pmwcas::Allocator::Get());
+  auto *pool = my_tree->GetPMWCASPool();
+  pool->~DescriptorPool();
+}
+
+bool BzTreee::find(size_t key, size_t sz){
+    uint64_t k = key;
+    uint64_t value_out;
+    return my_tree
+      ->Read(reinterpret_cast<const char *>(&k), sz, &value_out)
+      .IsOk();
+//   return true;
+}
+
+bool BzTreee::insert(size_t key, size_t key_sz, const char* value, size_t value_sz){
+
+  assert(value_sz == sizeof(uint64_t));
+  uint64_t v = reinterpret_cast<uint64_t>(const_cast<char *>(value));
+  auto rv = my_tree->Insert(reinterpret_cast<const char *>(&key), key_sz, v);
+
+  LOG_IF(INFO, !rv.IsOk()) << "insert failed!" << std::endl;
+  return rv.IsOk();
+
+  // return true;
+}
+
+bool BzTreee::update(size_t key, size_t key_sz, const char* value, size_t value_sz){
+  return true;
+}
+
+bool BzTreee::remove(size_t key, size_t key_sz){
+  return true;
+}
+
+int BzTreee::scan(size_t key, size_t key_sz, int scan_sz){
+  static thread_local std::array<char, (1 << 20)> results;
+
+  int scanned = 0;
+  char *dst = results.data();
+
+  auto iter = my_tree->RangeScanBySize(reinterpret_cast<const char *>(&key), key_sz,
+                                     scan_sz);
+  for (scanned = 0; (scanned < scan_sz); ++scanned) {
+    auto record = iter->GetNext();
+    if (record == nullptr) break;
+
+    // uint64_t result_key = __builtin_bswap64(
+    //     *reinterpret_cast<const uint64_t *>(record->GetKey()));
+    // memcpy(dst, &result_key, sizeof(uint64_t));
+    // dst += sizeof(uint64_t);
+
+    auto payload = record->GetPayload();
+    memcpy(dst, &payload, sizeof(uint64_t));
+    dst += sizeof(uint64_t);
+  }
+  // values_out = results.data();
+  return scanned;
+}
+
+
+
 
 
 #else
@@ -891,6 +1049,8 @@ extern "C" Tree_api* get_tree() {
     return new UTree();
 #elif USE_PACTREE
     return new PACTree();
+#elif USE_BZTREE
+    return new BzTreee();
 #else
     if(run_thread > 28)
     {
