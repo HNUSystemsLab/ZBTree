@@ -11,10 +11,10 @@ A read-optimized PMem friendly B+-Tree
 
 Please follow their guidence to install related dependecies.
 
-## Bind your PMem
-Our system requires optane PMem device to run.
-If you're new to this field, please refer to this [link](https://docs.pmem.io/ndctl-user-guide/managing-nvdimms) to properly config your PMem device first.
-First, you need to mount your PMem to your system:
+## Bind PMem
+Our system requires Optane PMem device to run.
+If you're new to this field, please refer to this [link](https://docs.pmem.io/ndctl-user-guide/managing-nvdimms) to properly config your PMem device.
+First, you need to mount your PMem to your system like this:
 ```
 sudo mkdir /mnt/pmem
 sudo mkfs.ext4 /dev/pmem0
@@ -32,12 +32,13 @@ sudo mount -l|grep pmem
 call **make** to generate dynamic lib for ZBTree and binary for benchmark.
 ### Build other indices:
 change indices name command line:
-### generate YCSB workload for ZBTree
-after generate workload follow [this](https://github.com/HNUSystemsLab/Halo/tree/main/YCSB) link, please change the workdir in main.cpp. for example 
-For example:
+For example, if you want to compile FP-Tree:
 ```
 make fptree
-```
+``
+### generate YCSB workload for ZBTree
+after generate workload follow [this](https://github.com/HNUSystemsLab/Halo/tree/main/YCSB) link, please change the workdir in main.cpp. for example 
+`
 
 ## How to Run
 
