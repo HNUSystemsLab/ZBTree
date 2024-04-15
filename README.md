@@ -52,6 +52,7 @@ Add defination during make:
   -DLATENCY : tail latency test
   -DVAR_TEST : long value test
   -DPCMM : bandwidth and cache hit rate test
+  -DRUN_SIMPLE : simple test that insert key[1-1000] and search them
 ```
 See `.sh` files for more details.
 
