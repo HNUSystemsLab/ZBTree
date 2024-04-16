@@ -1,6 +1,7 @@
 # ZBTree
 
-A read-optimized PMem friendly B+-Tree
+ZBTree: A Write Optimized High Performance B+-Tree for Persistent Memory
+
 
 ## Dependencies
 [PMDK](https://github.com/pmem/pmdk)
