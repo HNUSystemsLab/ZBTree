@@ -1,1 +1,0 @@
-/usr/bin/c++  -Wno-long-long -pedantic -fPIC -march=native -O3 -DNDEBUG -rdynamic CMakeFiles/symbolize_unittest.dir/src/symbolize_unittest.cc.o -o symbolize_unittest  libglog.a -lunwind 

@@ -1,3 +1,0 @@
-repository='https://github.com/sfu-dis/pmwcas.git'
-module=''
-tag='origin'

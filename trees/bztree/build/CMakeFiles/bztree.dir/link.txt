@@ -1,1 +1,0 @@
-/usr/bin/c++ -fPIC  -std=c++17 -ggdb -O3 -fpermissive -Ofast -march=native -O3 -DNDEBUG -shared -Wl,-soname,libbztree.so -o libbztree.so CMakeFiles/bztree.dir/bztree.cc.o   -L/home/cwk/bztree/build/pmwcas/src/PMWCAS-build  -Wl,-rpath,/home/cwk/bztree/build/pmwcas/src/PMWCAS-build -lnuma -lpthread -pthread -lrt -lpmwcas -lpmwcas -lpmemobj 

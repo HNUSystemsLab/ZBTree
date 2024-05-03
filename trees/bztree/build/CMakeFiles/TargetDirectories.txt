@@ -1,6 +1,0 @@
-/home/cwk/bztree/build/CMakeFiles/PMWCAS.dir
-/home/cwk/bztree/build/CMakeFiles/bztree.dir
-/home/cwk/bztree/build/CMakeFiles/bztree_pibench_wrapper.dir
-/home/cwk/bztree/build/CMakeFiles/cpplint.dir
-/home/cwk/bztree/build/CMakeFiles/edit_cache.dir
-/home/cwk/bztree/build/CMakeFiles/rebuild_cache.dir
