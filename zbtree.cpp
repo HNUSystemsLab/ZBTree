@@ -1,6 +1,5 @@
 #include "zbtree.h"
-// #define RECOVERY
-// #define USE_PMDK
+
 #define IGNORE
 #ifdef BREAKDOWN_FIND
 thread_local uint64_t breakdown_search=0;
@@ -15,9 +14,7 @@ thread_local uint64_t breakdown_split2_split=0;
 #define POOL_SIZE 64*1024*1024*1024ULL
 #define TESTINLINE NOINLINE
 #define THREAD_INIT 996996
-// #define CXL
-//#define SPACE
-// #define BREAKDOWN
+
 extern size_t pm_pool_size;
 extern int run_thread;
 extern int read_threshold;
@@ -57,8 +54,6 @@ static const uint64_t kFNVPrime64 = 1099511628211;
     #define ALIGN(n) __attribute__((aligned(n)))
 #endif
 
-
-
 #ifdef DALC
 thread_local D_alc tree_dlc;
 #endif
@@ -78,7 +73,6 @@ void pmdk_free(void* ptr){
 static int ceiling(int key_num, int node_key){
     return (key_num + node_key - 1) / node_key;
 }
-
 
 void finger_differ(adaptive_slot* array, int* results, int count_result){
     int i=0;
@@ -148,7 +142,6 @@ void qsort(int start, int end, Node_entry* temp, adaptive_slot* temp2){
     qsort(start+1, end_rem, temp, temp2);
 }
 
-
 unsigned char hashfunc(uint64_t val)
 {
   unsigned char hash = 123;
@@ -163,7 +156,6 @@ unsigned char hashfunc(uint64_t val)
   }
   return hash;
 }
-
 
 DSeg::DSeg(){
     //split_log = (Log_buffer*) tree_alloc.n_allocate(sizeof(Log_buffer));
@@ -286,7 +278,6 @@ void DSeg::recycle(){
     //move to new block
 }
 
-
 void DSeg::replay(std::vector<finger_array> &finger_vec, std::vector<Key_t> &key_vec){
     int this_tid = gettid() % 56;
     for(auto iter=mmanagers[this_tid]->nlog_list.begin(); iter!=mmanagers[this_tid]->nlog_list.end(); iter++)
@@ -324,11 +315,6 @@ void DSeg::replay(std::vector<finger_array> &finger_vec, std::vector<Key_t> &key
         }
     }
 }
-
-
-
-
-
 
 bool test_exist(const char* file_name){
     std::ifstream f1(file_name);
@@ -377,7 +363,6 @@ Tree::Tree(void* start_address){
             count_dram += sizeof(D_Leaf);
 #endif
 #endif
-
 
 #ifdef USE_PMDK
             //pmemobj_alloc(pop, &pmdk_ptr, sizeof(Leaf_Node), 0, nullptr, nullptr);
@@ -440,8 +425,6 @@ void Tree::liner_clear(){
     // }
 }
 
-
-
 void Tree::liner_find(Key_t key){
     D_Leaf* start = dstart;
     // Leaf_Node* start2 = (Leaf_Node*)start->alt_ptr;
@@ -475,8 +458,6 @@ void Tree::liner_find(Key_t key){
     std::cout<<"count is "<<count<<" "<<"count2 is "<< count2<<"  version write "<<count3 <<
      " version read "<<count4<<std::endl;
 }
-
-
 
 size_t Tree::find(Key_t key, int val_sz){
     tbb::speculative_spin_rw_mutex::scoped_lock lock_find;
@@ -1763,7 +1744,6 @@ void Tree::bulkload(clht_t* elysia, size_t leafcount){
     return;
 }
 
-
 void Tree::recover(){
 #ifdef RECOVERY
     if(root != nullptr)
@@ -2119,9 +2099,6 @@ restart:
         goto restart;
     }
 }
-
-
-
 
 Tree::~Tree(){
     size_t hit_total = 0;
